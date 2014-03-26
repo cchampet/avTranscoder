@@ -170,8 +170,11 @@ void decodeMpeg2Header( const AVPacket* pkt, size_t offset = 0 )
 		unsigned char d3 = data[offset++];
 		//std::cout << offset << " | start code " << (int)d0 << " - " << (int)d1 << " - " << (int)d2 << " - " << (unsigned int)d3 << std::endl;
 
-		if( ( d0 != 0 ) || ( d1 != 0 ) || ( d2 != 1 ) )
-			break;
+		if( ( (int)d0 != 0 ) || ( (int)d1 != 0 ) || ( (int)d2 != 1 ) )
+		{
+			decodingNextHeaderElement = false;
+			continue;
+		}
 
 
 		switch( d3 )
