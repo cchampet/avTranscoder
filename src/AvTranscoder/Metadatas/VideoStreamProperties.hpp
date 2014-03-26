@@ -24,7 +24,7 @@ namespace avtranscoder
 namespace details
 {
 
-void decodeMpeg2SequenceHeader( const AVPacket* pkt, size_t offset = 0 )
+size_t decodeMpeg2SequenceHeader( const AVPacket* pkt, size_t offset = 0 )
 {
 	uint8_t* data = pkt->data;
 
@@ -69,44 +69,131 @@ void decodeMpeg2SequenceHeader( const AVPacket* pkt, size_t offset = 0 )
 		default : std::cout << "reserved frame rate" << std::endl; break;
 	}
 
-	unsigned char d0 = data[offset++];
-	unsigned char d1 = data[offset++];
-	unsigned char d2 = data[offset++];
-	unsigned char d3 = data[offset++];
+	if( d11 && 0x2 )
+	{
+		offset += 64; // 64 byte of intra quantification matrix
+		std::cout << "load intra quantiser matrix" << std::endl;
 
-	//std::cout << offset << " - start code ?? " << (int)d0 << " - " << (int)d1 << " - " << (int)d2 << " - " << (unsigned int)d3 << std::endl;
+		if( d11 && 0x2 )
+		{
+			offset += 64; // 64 byte of non-intra quantification matrix
+			std::cout << "load non-intra quantiser matrix" << std::endl;
+		}
+	}
+
+	return offset;
+}
+
+size_t decodeMpeg2Extension( const AVPacket* pkt, size_t offset = 0 )
+{
+	uint8_t* data = pkt->data;
+
+	unsigned char d4 = data[offset++];
+
+	switch( (unsigned int) ( d4 >> 4 ) )
+	{
+		case 1 :
+		{
+			std::cout << "Sequence Extension" << std::endl;
+			offset += 5;
+			break;
+		}
+		case 2 :
+		{
+			std::cout << "Sequence Display Extension" << std::endl;
+			if( d4 && 0x01 )
+				offset += 7;
+			else
+				offset += 4;
+			break;
+		}
+		case 8 :
+		{
+			std::cout << "Picture Coding Extension" << std::endl;
+			unsigned char d5 = data[offset++];
+			unsigned char d6 = data[offset++];
+			unsigned char d7 = data[offset++];
+			unsigned char d8 = data[offset++];
+
+			if( ( d8 && 0x40 ) != 0)
+			{
+				unsigned char d9 = data[offset++];
+				unsigned char d10 = data[offset++];
+			}
+			break;
+		}
+		default:
+		{
+			std::cout << "unknown extension " << ( ( d4 && 0xf0 ) ) << std::endl;
+		}
+	}
+
+	return offset;
+}
+
+size_t decodeMpeg2GOP( const AVPacket* pkt, size_t offset = 0 )
+{
+	uint8_t* data = pkt->data;
+
+	unsigned char d4 = data[offset++];
+	unsigned char d5 = data[offset++];
+	unsigned char d6 = data[offset++];
+	unsigned char d7 = data[offset++];
+
+	size_t hour   = 0;
+	size_t minute = 0;
+	size_t second = 0;
+	size_t frame  = 0;
+
+	// hour = (unsigned int)( d4 && 0x7C ) >> 2;
+	// minute = (unsigned int)( d4 && 0x7C ) >> 2;
+	// second = (unsigned int)( d4 && 0x7C ) >> 2;
+	// frame = (unsigned int)( d4 && 0x7C ) >> 2;
+
+	// std::cout << hour << ":" << minute << ":" << second << ":" << frame;
+
+	return offset;
 }
 
 void decodeMpeg2Header( const AVPacket* pkt, size_t offset = 0 )
 {
+	std::cout << "----------------------------"<< std::endl;
 	uint8_t* data = pkt->data;
 
-	unsigned char d0 = data[offset++];
-	unsigned char d1 = data[offset++];
-	unsigned char d2 = data[offset++];
-	unsigned char d3 = data[offset++];
+	bool decodingNextHeaderElement = true;
 
-	//std::cout << "start code " << (int)d0 << " - " << (int)d1 << " - " << (int)d2 << " - " << (unsigned int)d3 << std::endl;
-
-	switch( d3 )
+	while( decodingNextHeaderElement )
 	{
-		case 0x00: std::cout << "start code prefix for Picture" << std::endl; break;
-		case 0xB0: std::cout << "start code prefix : reserved" << std::endl; break;
-		case 0xB1: std::cout << "start code prefix : reserved" << std::endl; break;
-		case 0xB2: std::cout << "start code prefix for User data" << std::endl; break;
-		case 0xB3: std::cout << "start code prefix for Sequence Header" << std::endl; decodeMpeg2SequenceHeader( pkt, offset ); break;
-		case 0xB4: std::cout << "start code prefix for Sequence Error" << std::endl; break;
-		case 0xB5: std::cout << "start code prefix for Extension" << std::endl; break;
-		case 0xB6: std::cout << "start code prefix for Reserved" << std::endl; break;
-		case 0xB7: std::cout << "start code prefix for Sequence End" << std::endl; break;
-		case 0xB8: std::cout << "start code prefix for Group Of Picture" << std::endl; break;
-		default:
-		{
-			if( d3 < 0xB0 )
-				std::cout << "start code prefix for slice" << std::endl;
-			else
-				std::cout << "UNKNOWN start code prefix" << std::endl;
+		unsigned char d0 = data[offset++];
+		unsigned char d1 = data[offset++];
+		unsigned char d2 = data[offset++];
+		unsigned char d3 = data[offset++];
+		//std::cout << offset << " | start code " << (int)d0 << " - " << (int)d1 << " - " << (int)d2 << " - " << (unsigned int)d3 << std::endl;
+
+		if( ( d0 != 0 ) || ( d1 != 0 ) || ( d2 != 1 ) )
 			break;
+
+
+		switch( d3 )
+		{
+			case 0x00: std::cout << "start code prefix for Picture" << std::endl; break;
+			case 0xB0: std::cout << "start code prefix : reserved" << std::endl; break;
+			case 0xB1: std::cout << "start code prefix : reserved" << std::endl; break;
+			case 0xB2: std::cout << "start code prefix for User data" << std::endl; break;
+			case 0xB3: std::cout << "start code prefix for Sequence Header" << std::endl; offset = decodeMpeg2SequenceHeader( pkt, offset ); break;
+			case 0xB4: std::cout << "start code prefix for Sequence Error" << std::endl; break;
+			case 0xB5: std::cout << "start code prefix for Extension" << std::endl; offset = decodeMpeg2Extension( pkt, offset ); break;
+			case 0xB6: std::cout << "start code prefix for Reserved" << std::endl; break;
+			case 0xB7: std::cout << "start code prefix for Sequence End" << std::endl; break;
+			case 0xB8: std::cout << "start code prefix for Group Of Picture" << std::endl; offset = decodeMpeg2GOP( pkt, offset ); break;
+			default:
+			{
+				if( d3 < 0xB0 )
+					std::cout << "start code prefix for slice" << std::endl;
+				else
+					std::cout << "UNKNOWN start code prefix" << std::endl;
+				break;
+			}
 		}
 	}
 }
@@ -131,7 +218,7 @@ void getGopProperties( VideoProperties& vp, AVFormatContext* formatContext, AVCo
 	{
 		if( pkt.stream_index == index )
 		{
-			//decodeMpeg2Header( &pkt );
+			decodeMpeg2Header( &pkt );
 
 			avcodec_decode_video2( codecContext, frame, &gotFrame, &pkt );
 			if( gotFrame )
