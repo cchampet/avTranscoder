@@ -9,6 +9,7 @@ extern "C" {
 #include <libavformat/avformat.h>
 #include <libavutil/avutil.h>
 #include <libavutil/pixdesc.h>
+#include <libavutil/timecode.h>
 }
 #include <iostream>
 #ifdef _MSC_VER
@@ -22,6 +23,93 @@ namespace avtranscoder
 
 namespace details
 {
+
+void decodeMpeg2SequenceHeader( const AVPacket* pkt, size_t offset = 0 )
+{
+	uint8_t* data = pkt->data;
+
+	unsigned char d4 = data[offset++];
+	unsigned char d5 = data[offset++];
+	unsigned char d6 = data[offset++];
+	unsigned char d7 = data[offset++];
+	unsigned char d8 = data[offset++];
+	unsigned char d9 = data[offset++];
+	unsigned char d10 = data[offset++];
+	unsigned char d11 = data[offset++];
+
+	unsigned short width = ( d4 << 4 ) + ( ( d5 & 0xF0 ) >> 4 );
+	unsigned short height = ( ( d5 & 0x0F ) << 8 ) + d6;
+
+	unsigned int bitrate = ( d8 << 10 ) + ( d9 << 2 ) + ( ( d10 & 0xC0 ) >> 6 );
+
+	std::cout << "video size: " << width << "x" << height << std::endl;
+	std::cout << "bit rate: " << bitrate << std::endl;
+
+	switch( d7 & 0xf0 >> 4 ) // frame rate
+	{
+		case 0 : std::cout << "forbidden aspect ratio" << std::endl; break;
+		case 1 : std::cout << "aspect ratio = 1:1" << std::endl; break;
+		case 2 : std::cout << "aspect ratio = 4:3" << std::endl; break;
+		case 3 : std::cout << "aspect ratio = 16:9" << std::endl; break;
+		case 4 : std::cout << "aspect ratio = 2.21:1" << std::endl; break;
+		default : std::cout << "reserved aspect ratio" << std::endl; break;
+	}
+
+	switch( d7 & 0x0f ) // frame rate
+	{
+		case 0 : std::cout << "forbidden frame rate" << std::endl; break;
+		case 1 : std::cout << "frame rate = 24000/1001 (23.976)" << std::endl; break;
+		case 2 : std::cout << "frame rate = 24" << std::endl; break;
+		case 3 : std::cout << "frame rate = 25" << std::endl; break;
+		case 4 : std::cout << "frame rate = 30000/1001 (29.97)" << std::endl; break;
+		case 5 : std::cout << "frame rate = 30" << std::endl; break;
+		case 6 : std::cout << "frame rate = 50" << std::endl; break;
+		case 7 : std::cout << "frame rate = 60000/1001 (59.94)" << std::endl; break;
+		case 8 : std::cout << "frame rate = 60" << std::endl; break;
+		default : std::cout << "reserved frame rate" << std::endl; break;
+	}
+
+	unsigned char d0 = data[offset++];
+	unsigned char d1 = data[offset++];
+	unsigned char d2 = data[offset++];
+	unsigned char d3 = data[offset++];
+
+	//std::cout << offset << " - start code ?? " << (int)d0 << " - " << (int)d1 << " - " << (int)d2 << " - " << (unsigned int)d3 << std::endl;
+}
+
+void decodeMpeg2Header( const AVPacket* pkt, size_t offset = 0 )
+{
+	uint8_t* data = pkt->data;
+
+	unsigned char d0 = data[offset++];
+	unsigned char d1 = data[offset++];
+	unsigned char d2 = data[offset++];
+	unsigned char d3 = data[offset++];
+
+	//std::cout << "start code " << (int)d0 << " - " << (int)d1 << " - " << (int)d2 << " - " << (unsigned int)d3 << std::endl;
+
+	switch( d3 )
+	{
+		case 0x00: std::cout << "start code prefix for Picture" << std::endl; break;
+		case 0xB0: std::cout << "start code prefix : reserved" << std::endl; break;
+		case 0xB1: std::cout << "start code prefix : reserved" << std::endl; break;
+		case 0xB2: std::cout << "start code prefix for User data" << std::endl; break;
+		case 0xB3: std::cout << "start code prefix for Sequence Header" << std::endl; decodeMpeg2SequenceHeader( pkt, offset ); break;
+		case 0xB4: std::cout << "start code prefix for Sequence Error" << std::endl; break;
+		case 0xB5: std::cout << "start code prefix for Extension" << std::endl; break;
+		case 0xB6: std::cout << "start code prefix for Reserved" << std::endl; break;
+		case 0xB7: std::cout << "start code prefix for Sequence End" << std::endl; break;
+		case 0xB8: std::cout << "start code prefix for Group Of Picture" << std::endl; break;
+		default:
+		{
+			if( d3 < 0xB0 )
+				std::cout << "start code prefix for slice" << std::endl;
+			else
+				std::cout << "UNKNOWN start code prefix" << std::endl;
+			break;
+		}
+	}
+}
 
 void getGopProperties( VideoProperties& vp, AVFormatContext* formatContext, AVCodecContext* codecContext, AVCodec* codec, const int index )
 {
@@ -43,6 +131,8 @@ void getGopProperties( VideoProperties& vp, AVFormatContext* formatContext, AVCo
 	{
 		if( pkt.stream_index == index )
 		{
+			//decodeMpeg2Header( &pkt );
+
 			avcodec_decode_video2( codecContext, frame, &gotFrame, &pkt );
 			if( gotFrame )
 			{
