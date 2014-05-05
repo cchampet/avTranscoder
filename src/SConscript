@@ -6,6 +6,14 @@ Import( "envJava" )
 Import( "envPy" )
 Import( "installPrefix" )
 
+import distutils.sysconfig, os
+vars = distutils.sysconfig.get_config_vars('CC', 'CXX', 'OPT', 'BASECFLAGS', 'CCSHARED', 'LDSHARED', 'SO')
+for i in range(len(vars)):
+    if vars[i] is None:
+        vars[i] = ""
+(cc, cxx, opt, basecflags, ccshared, ldshared, so_ext) = vars
+
+
 env.Replace(SHLIBSUFFIX = '.so.$SHLIB_VERSION')
 
 AvTranscoderVersion = '0.0.1'
@@ -48,9 +56,15 @@ jAvTranscoder = envJava.SharedLibrary(
     )
 
 pyAvTranscoder = envPy.SharedLibrary(
-        'pyAvTranscoder',
+        'AvTranscoder',
         source='AvTranscoder/avTranscoder.i',
-        LIBS=[ sAvTranscoder ],
+        LIBS=[
+            sAvTranscoder,
+            'libavutil',
+            'libavcodec',
+            'libavformat',
+            'libswscale',
+            ],
     )
 
 avTranscoder_class = env.Java(
@@ -79,3 +93,7 @@ env.Alias( "install", env.Install(os.path.join( installPrefix, "lib" ), jAvTrans
 env.Alias( "install", env.Install(os.path.join( installPrefix, "include/AvTranscoder" ), Glob( 'AvTranscoder/*.hpp' ) ) )
 env.Alias( "install", env.Install(os.path.join( installPrefix, "include/AvTranscoder/Metadatas" ), Glob( 'AvTranscoder/Metadatas/MediaMetadatasStructures.hpp' ) ) )
 env.Alias( "install", env.Install(os.path.join( installPrefix, "include/AvTranscoder/DatasStructures" ), Glob( 'AvTranscoder/DatasStructures/*.hpp' ) ) )
+
+
+env.Alias( "install", env.Install(os.path.join( installPrefix, "site-packages", "AvTranscoder" ), "AvTranscoder/AvTranscoder.py" ) )
+env.Alias( "install", env.Install(os.path.join( installPrefix, "site-packages", "AvTranscoder" ), pyAvTranscoder ) )
