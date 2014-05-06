@@ -11,22 +11,20 @@ class AvMeta(object):
     exposed = True
 
     @cherrypy.tools.json_out()
-    def GET(self, id=None):
-        if not id:
+    @cherrypy.tools.json_in()
+    def POST(self):
+        # jsonData = cherrypy.request.json
+        # print jsonData['filename']
+        filename = str( cherrypy.request.json['filename'] )
+        if not filename:
             raise cherrypy.HTTPError( "404 Bad request", "Invalid request parameters." )
-
-        #filename = getFilenameFromId( id )
-        filename = "/mnt/backup/PADdef/PRestore_PADdef_20131205_WrapMXF_VF_AD_VM_SP_1-6_7-8_9-10_15-16.mxf"
 
         inputFile = AvTranscoder.InputFile( filename )
         inputFile.analyse()
 
         properties = inputFile.getProperties()
-        print properties.filename
-        print properties.duration
 
         result = {
-            'id': id,
             'filename': properties.filename,
             'formatName': properties.formatName,
             'formatLongName': properties.formatLongName,
