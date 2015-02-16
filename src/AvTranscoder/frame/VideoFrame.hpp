@@ -14,6 +14,7 @@ namespace avtranscoder
 class AvExport VideoFrameDesc
 {
 public:
+	VideoFrameDesc( const AVCodecContext* context );
 	VideoFrameDesc( const size_t width = 0, const size_t height = 0, const AVPixelFormat pixelFormat = AV_PIX_FMT_NONE );
 	VideoFrameDesc( const size_t width, const size_t height, const std::string& pixelFormat );
 
@@ -21,7 +22,9 @@ public:
 	size_t getHeight() const { return _height; }
 	AVPixelFormat getPixelFormat() const { return _pixelFormat; }
 	std::string getPixelFormatName() const;
-	double getFps() const { return _fps; }
+	double getFps() const;
+	Rational getTimeBase() const { return _timeBase; }
+	double getTicksPerFrame() const { return _ticksPerFrame; }
 
 	size_t getDataSize() const;
 
@@ -29,7 +32,9 @@ public:
 	void setHeight( const size_t height ) { _height = height; }
 	void setPixelFormat( const std::string& pixelFormat );
 	void setPixelFormat( const AVPixelFormat pixelFormat ) { _pixelFormat = pixelFormat; }
-	void setFps( const double fps ) { _fps = fps; }
+	void setFps( const double fps, const double ticksPerFrame = 1.0 );
+	void setTimeBase( const AVRational timeBase ) { _timeBase = timeBase; }
+	void setTicksPerFrame( const double tickPerFrame ) { _ticksPerFrame = tickPerFrame; }
 
 	void setParameters( const ProfileLoader::Profile& profile );
 
@@ -37,7 +42,8 @@ private:
 	size_t _width;
 	size_t _height;
 	AVPixelFormat _pixelFormat;
-	double _fps;
+	Rational _timeBase;
+	double _ticksPerFrame;
 };
 
 //template< template<typename> Alloc >

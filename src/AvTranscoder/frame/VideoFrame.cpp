@@ -7,29 +7,53 @@ extern "C" {
 
 #include <stdexcept>
 #include <stdlib.h>
+#include <cmath>
 
 namespace avtranscoder
 {
+
+VideoFrameDesc::VideoFrameDesc( const AVCodecContext* context )
+	: _width( context->width )
+	, _height( context->height )
+	, _pixelFormat( context->pix_fmt )
+	, _timeBase( context->time_base )
+	, _ticksPerFrame( context->ticks_per_frame )
+{
+}
 
 VideoFrameDesc::VideoFrameDesc( const size_t width, const size_t height, const AVPixelFormat pixelFormat )
 	: _width( width )
 	, _height( height )
 	, _pixelFormat( pixelFormat )
-	, _fps( 1.0 )
+	, _timeBase()
+	, _ticksPerFrame( 1.0 )
 {
+	_timeBase.num = 0;
+	_timeBase.den = 0;
 }
 VideoFrameDesc::VideoFrameDesc( const size_t width, const size_t height, const std::string& pixelFormat )
 	: _width( width )
 	, _height( height )
 	, _pixelFormat( av_get_pix_fmt( pixelFormat.c_str() ) )
-	, _fps( 1.0 )
+	, _timeBase()
+	, _ticksPerFrame( 1.0 )
 {
+	_timeBase.num = 0;
+	_timeBase.den = 0;
 }
 
 std::string VideoFrameDesc::getPixelFormatName() const
 {
 	const char* formatName = av_get_pix_fmt_name( _pixelFormat );
 	return formatName ? std::string( formatName ) : "unknown pixel format";
+}
+
+double VideoFrameDesc::getFps() const
+{
+	double fps = 1.0 * _timeBase.den / ( _timeBase.num * _ticksPerFrame );
+	if( ! std::isinf( fps ) )
+		return fps;
+	return 1.0;
 }
 
 size_t VideoFrameDesc::getDataSize() const
@@ -47,6 +71,13 @@ size_t VideoFrameDesc::getDataSize() const
 void VideoFrameDesc::setPixelFormat( const std::string& pixelFormat )
 {
 	_pixelFormat = av_get_pix_fmt( pixelFormat.c_str() );
+}
+
+void VideoFrameDesc::setFps( const double fps, const double ticksPerFrame )
+{
+	_timeBase.num = 1;
+	_timeBase.den = fps;
+	_ticksPerFrame = ticksPerFrame;
 }
 
 void VideoFrameDesc::setParameters( const ProfileLoader::Profile& profile )
