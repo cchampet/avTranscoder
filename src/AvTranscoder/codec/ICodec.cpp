@@ -18,7 +18,6 @@ ICodec::ICodec(const ECodecType type, const std::string& codecName)
 {
     setCodec(type, codecName);
     allocateContext();
-    loadCodecOptions();
 }
 
 ICodec::ICodec(const ECodecType type, const AVCodecID codecId)
@@ -29,7 +28,6 @@ ICodec::ICodec(const ECodecType type, const AVCodecID codecId)
 {
     setCodec(type, codecId);
     allocateContext();
-    loadCodecOptions();
 }
 
 ICodec::ICodec(const ECodecType type, AVCodecContext& avCodecContext)
@@ -39,7 +37,6 @@ ICodec::ICodec(const ECodecType type, AVCodecContext& avCodecContext)
     , _type(type)
 {
     setCodec(type, _avCodecContext->codec_id);
-    loadCodecOptions();
 }
 
 ICodec::~ICodec()
@@ -122,6 +119,13 @@ int ICodec::getLatency() const
     return _avCodecContext->delay;
 }
 
+void ICodec::loadCodecOptions(const int flags)
+{
+    loadOptions(_options, _avCodecContext, flags);
+    // load specific options of the codec
+    loadOptions(_options, _avCodecContext->priv_data, flags);
+}
+
 std::vector<Option> ICodec::getOptions()
 {
     std::vector<Option> optionsArray;
@@ -170,21 +174,5 @@ void ICodec::allocateContext()
         throw std::runtime_error("Unable to allocate the codecContext and set its fields to default values");
     }
     _avCodecContext->codec = _avCodec;
-}
-
-void ICodec::loadCodecOptions()
-{
-    if(_type == eCodecTypeEncoder)
-    {
-        loadOptions(_options, _avCodecContext, AV_OPT_FLAG_ENCODING_PARAM);
-        // load specific options of the codec
-        loadOptions(_options, _avCodecContext->priv_data, AV_OPT_FLAG_ENCODING_PARAM);
-    }
-    else if(_type == eCodecTypeDecoder)
-    {
-        loadOptions(_options, _avCodecContext, AV_OPT_FLAG_DECODING_PARAM);
-        // load specific options of the codec
-        loadOptions(_options, _avCodecContext->priv_data, AV_OPT_FLAG_DECODING_PARAM);
-    }
 }
 }

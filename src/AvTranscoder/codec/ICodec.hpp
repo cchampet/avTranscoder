@@ -53,7 +53,18 @@ public:
     ECodecType getCodecType() const { return _type; }
     int getLatency() const;
 
-    OptionArray getOptions(); ///< Get options as array
+    /**
+     * @brief Load the codec options (both common and private options).
+     * @note See libav flag AV_OPT_FLAG_XXX (default = 0: no flag restriction).
+     * @see openCodec to load private codec options.
+     */
+    void loadCodecOptions(const int flags = 0);
+
+    /**
+     * @return codec options as array
+     * @see loadCodecOptions
+     */
+    OptionArray getOptions();
 #ifndef SWIG
     OptionMap& getOptionsMap() { return _options; } ///< Get options as map
 #endif
@@ -70,7 +81,6 @@ private:
     void setCodec(const ECodecType type, const std::string& codecName);
     void setCodec(const ECodecType type, const AVCodecID codecId);
     void allocateContext();
-    void loadCodecOptions();
 
 protected:
     AVCodecContext* _avCodecContext;     ///< Full codec instance description (has ownership)
