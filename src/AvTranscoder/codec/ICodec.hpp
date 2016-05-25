@@ -35,8 +35,17 @@ public:
 
     virtual ~ICodec() = 0;
 
-    /// Initialize the codec context.
+    /**
+     * @brief Initialize the codec context.
+     * @see closeCodec
+     */
     void openCodec();
+
+    /**
+     * @brief Close the codec context.
+     * @note free all the data associated with it (but not the codec context itself).
+     */
+    void closeCodec();
 
     AVCodecID getCodecId() const;
     std::string getCodecName() const;
