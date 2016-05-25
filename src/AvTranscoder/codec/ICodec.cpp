@@ -87,8 +87,10 @@ std::string ICodec::getCodecName() const
     const AVCodecDescriptor* desc = avcodec_descriptor_get(_avCodecContext->codec_id);
     if(!desc)
         throw std::runtime_error("Codec Descriptor is not available.");
-
-    return desc->name;
+    const char* name = desc->name;
+    if(!name)
+        throw std::runtime_error("unknown codec name");
+    return name;
 }
 
 AVCodecID ICodec::getCodecId() const
