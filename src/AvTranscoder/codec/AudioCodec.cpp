@@ -9,16 +9,19 @@ namespace avtranscoder
 AudioCodec::AudioCodec(const ECodecType type, const std::string& codecName)
     : ICodec(type, codecName)
 {
+    loadCodecOptions(AV_OPT_FLAG_AUDIO_PARAM);
 }
 
 AudioCodec::AudioCodec(const ECodecType type, const AVCodecID codecId)
     : ICodec(type, codecId)
 {
+    loadCodecOptions(AV_OPT_FLAG_AUDIO_PARAM);
 }
 
 AudioCodec::AudioCodec(const ECodecType type, AVCodecContext& avCodecContext)
     : ICodec(type, avCodecContext)
 {
+    loadCodecOptions(AV_OPT_FLAG_AUDIO_PARAM);
 }
 
 AudioFrameDesc AudioCodec::getAudioFrameDesc() const

@@ -9,16 +9,19 @@ namespace avtranscoder
 VideoCodec::VideoCodec(const ECodecType type, const std::string& codecName)
     : ICodec(type, codecName)
 {
+    loadCodecOptions(AV_OPT_FLAG_VIDEO_PARAM);
 }
 
 VideoCodec::VideoCodec(const ECodecType type, const AVCodecID codecId)
     : ICodec(type, codecId)
 {
+    loadCodecOptions(AV_OPT_FLAG_VIDEO_PARAM);
 }
 
 VideoCodec::VideoCodec(const ECodecType type, AVCodecContext& avCodecContext)
     : ICodec(type, avCodecContext)
 {
+    loadCodecOptions(AV_OPT_FLAG_VIDEO_PARAM);
 }
 
 VideoFrameDesc VideoCodec::getVideoFrameDesc() const
