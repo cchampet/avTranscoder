@@ -38,8 +38,9 @@ public:
     /// Initialize the codec context.
     void openCodec();
 
-    std::string getCodecName() const;
     AVCodecID getCodecId() const;
+    std::string getCodecName() const;
+    std::string getCodecLongName() const;
     ECodecType getCodecType() const { return _type; }
     int getLatency() const;
 
